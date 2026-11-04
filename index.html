@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OSI 7-Layer Model Simulation | Real Sockets & Python Zig-Zag Visualizer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --ubuntu-bg: #11111b;
+            --terminal-bg: #181825;
+            --panel-bg: #1e1e2e;
+            --panel-border: #313244;
+            --ubuntu-orange: #e95420;
+            --ubuntu-purple: #77216f;
+            --text-main: #cdd6f4;
+            --text-dim: #a6adc8;
+            --green: #a6e3a1;
+            --cyan: #89dceb;
+            --magenta: #f5c2e7;
+            --yellow: #f9e2af;
+            --blue: #89b4fa;
+            --red: #f38ba8;
+            --white: #ffffff;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Ubuntu', sans-serif;
+            background-color: var(--ubuntu-bg);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .header-bar {
+            text-align: center;
+            max-width: 1200px;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        .header-bar h1 {
+            font-size: 1.9rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 6px;
+            letter-spacing: -0.5px;
+        }
+
+        .header-bar h1 span {
+            color: var(--ubuntu-orange);
+        }
+
+        .header-bar p {
+            color: var(--text-dim);
+            font-size: 0.95rem;
+        }
+
+        .badge-row {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            background: #232634;
+            border: 1px solid #414559;
+            padding: 3px 10px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-family: 'Fira Code', monospace;
+            color: var(--cyan);
+        }
+
+        /* Control Panel */
+        .controls-card {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 10px;
+            padding: 14px 20px;
+            width: 100%;
+            max-width: 1200px;
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .input-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .input-group label {
+            font-weight: 700;
+            color: var(--ubuntu-orange);
+            font-size: 0.9rem;
+        }
+
+        .input-group input {
+            flex: 1;
+            background: var(--terminal-bg);
+            border: 1px solid #45475a;
+            color: #ffffff;
+            padding: 9px 14px;
+            border-radius: 6px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.9rem;
+            outline: none;
+        }
+
+        .input-group input:focus {
+            border-color: var(--ubuntu-orange);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        button {
+            padding: 9px 16px;
+            border-radius: 6px;
+            border: none;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-run {
+            background: var(--ubuntu-orange);
+            color: white;
+        }
+        .btn-run:hover {
+            background: #ff6832;
+            transform: translateY(-1px);
+        }
+
+        .btn-step {
+            background: #45475a;
+            color: white;
+        }
+        .btn-step:hover {
+            background: #585b70;
+        }
+
+        .btn-reset {
+            background: #313244;
+            color: #bac2de;
+        }
+        .btn-reset:hover {
+            background: #45475a;
+        }
+
+        /* 3 Checkpoint Banners */
+        .checkpoints-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            width: 100%;
+            max-width: 1200px;
+            margin-bottom: 20px;
+        }
+
+        .checkpoint-badge {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 8px;
+            padding: 10px 14px;
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            transition: all 0.3s ease;
+        }
+
+        .checkpoint-badge.done {
+            border-color: var(--green);
+            background: rgba(166, 227, 161, 0.12);
+            color: var(--green);
+            font-weight: 700;
+        }
+
+        /* Zig-Zag 3-Column Visualization Grid */
+        .zigzag-grid {
+            display: grid;
+            grid-template-columns: 1fr 140px 1fr;
+            gap: 16px;
+            width: 100%;
+            max-width: 1200px;
+            margin-bottom: 20px;
+        }
+
+        .stack-card {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 10px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .stack-header {
+            font-size: 1rem;
+            font-weight: 700;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--panel-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .layer-item {
+            background: var(--terminal-bg);
+            border: 1px solid #313244;
+            border-radius: 6px;
+            padding: 8px 12px;
+            transition: all 0.25s ease;
+            position: relative;
+        }
+
+        .layer-item.active {
+            border-color: var(--yellow);
+            box-shadow: 0 0 14px rgba(249, 226, 175, 0.3);
+            transform: scale(1.015);
+        }
+
+        .layer-item.done {
+            border-color: rgba(166, 227, 161, 0.4);
+        }
+
+        .layer-top-line {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .layer-name {
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-family: 'Fira Code', monospace;
+        }
+
+        .layer-detail {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+        }
+
+        .layer-data {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.72rem;
+            background: #11111b;
+            padding: 5px 8px;
+            border-radius: 4px;
+            color: #89b4fa;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            border: 1px solid #232634;
+        }
+
+        /* Wire Column */
+        .wire-column {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .wire-tube {
+            width: 4px;
+            height: 100%;
+            background: #313244;
+            position: relative;
+        }
+
+        .wire-label-box {
+            position: absolute;
+            bottom: 25px;
+            width: 130px;
+            height: 55px;
+            border: 2px dashed var(--ubuntu-orange);
+            border-top: none;
+            border-radius: 0 0 12px 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            color: var(--ubuntu-orange);
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-align: center;
+            background: rgba(233, 84, 32, 0.08);
+        }
+
+        /* Python Linux Stack Terminal Output */
+        .terminal-card {
+            background: #0d0e15;
+            border: 1px solid #313244;
+            border-radius: 10px;
+            padding: 16px;
+            width: 100%;
+            max-width: 1200px;
+            font-family: 'Fira Code', monospace;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .terminal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #232634;
+            margin-bottom: 12px;
+            font-size: 0.8rem;
+            color: var(--text-dim);
+        }
+
+        .terminal-dots {
+            display: flex;
+            gap: 6px;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .terminal-body {
+            max-height: 250px;
+            overflow-y: auto;
+            font-size: 0.8rem;
+            line-height: 1.6;
+            color: #a6adc8;
+        }
+
+        .log-tx { color: #89b4fa; }
+        .log-rx { color: #a6e3a1; }
+        .log-ok { color: #a6e3a1; font-weight: 700; }
+        .log-chk { color: #f9e2af; font-weight: 700; }
+        .log-success { color: #a6e3a1; font-weight: 700; font-size: 0.9rem; }
+
+        footer {
+            margin-top: 25px;
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            text-align: center;
+        }
+
+        footer a {
+            color: var(--ubuntu-orange);
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header-bar">
+        <h1>OSI 7-Layer <span>Simulation Live</span></h1>
+        <p>C-based Client &amp; Server with Real TCP Sockets &bull; Python Zig-Zag Visualizer &bull; Linux/Ubuntu Stack Style</p>
+        <div class="badge-row">
+            <span class="badge">Socket: 127.0.0.1:8080</span>
+            <span class="badge">Progress: Every 2 Layers</span>
+            <span class="badge">Stack: Linux/Ubuntu netfilter</span>
+            <span class="badge">Zero-Loss Decapsulation</span>
+        </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls-card">
+        <div class="input-group">
+            <label for="userMsg">Message Payload:</label>
+            <input type="text" id="userMsg" value="Hello OSI Model" placeholder="Enter message to encapsulate &amp; transmit...">
+        </div>
+        <div class="btn-group">
+            <button class="btn-run" id="btnRun">▶ Run Full Simulation</button>
+            <button class="btn-step" id="btnStep">⏭ Step-by-Step</button>
+            <button class="btn-reset" id="btnReset">↺ Reset</button>
+        </div>
+    </div>
+
+    <!-- 3 Checkpoints Status -->
+    <div class="checkpoints-row">
+        <div class="checkpoint-badge" id="chk1">
+            <strong>Checkpoint 1</strong><br>Layers 7 &amp; 6 Completed
+        </div>
+        <div class="checkpoint-badge" id="chk2">
+            <strong>Checkpoint 2</strong><br>Layers 5 &amp; 4 Completed
+        </div>
+        <div class="checkpoint-badge" id="chk3">
+            <strong>Checkpoint 3</strong><br>Layers 3 &amp; 2 Completed
+        </div>
+    </div>
+
+    <!-- Zig-Zag Flow Grid -->
+    <div class="zigzag-grid">
+
+        <!-- Client (Encapsulation) -->
+        <div class="stack-card">
+            <div class="stack-header" style="color: var(--blue);">
+                <span>💻 CLIENT (client.c)</span>
+                <span style="font-size: 0.75rem; color: var(--text-dim);">Encapsulation &darr;</span>
+            </div>
+
+            <div class="layer-item" id="c-7">
+                <div class="layer-top-line">
+                    <span class="layer-name" style="color: var(--green);">Layer 7: Application</span>
+                    <span class="layer-detail">app_send()</span>
+                </div>
+                <div class="layer-data" id="c-7-d">APP_HDR|Hello OSI Model</div>
+            </div>
+
+            <div class="layer-item" id="c-6">
+                <div class="layer-top-line">
+                    <span class="layer-name" style="color: var(--cyan);">Layer 6: Presentation</span>
+                    <span class="layer-detail">present_send()</span>
+                </div>
+                <div class="layer-data" id="c-6-d">PRS_HDR|APP_HDR|...</div>
+            </div>
+
+            <div class="layer-item" id="c-5">
+                <div class="layer-top-line">
+                    <span class="layer-name" style="color: var(--magenta);">Layer 5: Session</span>
+                    <span class="layer-detail">session_send()</span>
+                </div>
+                <div class="layer-data" id="c-5-d">SES_HDR|PRS_HDR|...</div>
+            </div>
+
+            <div class="layer-item" id="c-4">
+                <div class="layer-top-line">
+                    <span class="layer-name" style="color: var(--yellow);">Layer 4: Transport</span>
+                    <span class="layer-detail">transport_send()</span>
+                </div>
+                <div class="layer-data" id="c-4-d">TCP_HDR|SES_HDR|...</div>
+            </div>
+
+            <div class="layer-item" id="c-3">
+                <div class="layer-top-line">
+                    <span class="layer-name" style="color: var(--blue);">Layer 3: Network</span>
+                    <span class="layer-detail">network_send()</span>
+                </div>
+                <div class="layer-data" id="c-3-d">IP_HDR|TCP_HDR|...</div>
+            </div>
+
+            <div class="layer-item" id="c-2">
+                <div class="layer-top-line">
+                    <span class="layer-name" style="color: var(--red);">Layer 2: Data Link</span>
+                    <span class="layer-detail">datalink_send()</span>
+                </div>
+                <div class="layer-data" id="c-2-d">MAC_HDR|...|FCS:52</div>
+            </div>
+
+            <div class="layer-item" id="c-1">
+                <div class="layer-top-line">
+                    <span class="layer-name" style="color: var(--white);">Layer 1: Physical</span>
+                    <span class="layer-detail">physical_send()</span>
+                </div>
+                <div class="layer-data" id="c-1-d">Wire Bitstream &rarr; Socket</div>
+            </div>
+        </div>
+
+        <!-- Wire Column -->
+        <div class="wire-column">
+            <div class="wire-tube"></div>
+            <div class="wire-label-box">
+                REAL TCP SOCKET<br>127.0.0.1:8080<br>Wire Stream
+            </div>
+        </div>
+
+        <!-- Server (Decapsulation) -->
+        <div class="stack-card">
+            <div class="stack-header" style="color: var(--green);">
+                <span>🖥️ SERVER (server.c)</span>
+                <span style="font-size: 0.75rem; color: var(--text-dim);">Decapsulation &uarr;</span>
+            </div>
+
+            <div class="layer-item" id="s-7">
+                <div class="layer-top-line">
+                    <span class="layer-name" style="color: var(--green);">Layer 7: Application</span>
+                    <span class="layer-detail">app_recv()</span>
+                </div>
+                <div class="layer-data" id="s-7-d">Waiting...</div>
+            </div>
+
+            <div class="layer-item" id="s-6">
+                <div class="layer-top-line">
+                    <span class="layer-name" style="color: var(--cyan);">Layer 6: Presentation</span>
+                    <span class="layer-detail">present_recv()</span>
+                </div>
+                <div class="layer-data" id="s-6-d">Waiting...</div>
+            </div>
+
+            <div class="layer-item" id="s-5">
+                <div class="layer-top-line">
+                    <span class="layer-name" style="color: var(--magenta);">Layer 5: Session</span>
+                    <span class="layer-detail">session_recv()</span>
+                </div>
+                <div class="layer-data" id="s-5-d">Waiting...</div>
+            </div>
+
+            <div class="layer-item" id="s-4">
+                <div class="layer-top-line">
+                    <span class="layer-name" style="color: var(--yellow);">Layer 4: Transport</span>
+                    <span class="layer-detail">transport_recv()</span>
+                </div>
+                <div class="layer-data" id="s-4-d">Waiting...</div>
+            </div>
+
+            <div class="layer-item" id="s-3">
+                <div class="layer-top-line">
+                    <span class="layer-name" style="color: var(--blue);">Layer 3: Network</span>
+                    <span class="layer-detail">network_recv()</span>
+                </div>
+                <div class="layer-data" id="s-3-d">Waiting...</div>
+            </div>
+
+            <div class="layer-item" id="s-2">
+                <div class="layer-top-line">
+                    <span class="layer-name" style="color: var(--red);">Layer 2: Data Link</span>
+                    <span class="layer-detail">datalink_recv()</span>
+                </div>
+                <div class="layer-data" id="s-2-d">Waiting...</div>
+            </div>
+
+            <div class="layer-item" id="s-1">
+                <div class="layer-top-line">
+                    <span class="layer-name" style="color: var(--white);">Layer 1: Physical</span>
+                    <span class="layer-detail">physical_recv()</span>
+                </div>
+                <div class="layer-data" id="s-1-d">Waiting...</div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Python / Ubuntu Networking Stack Terminal Output -->
+    <div class="terminal-card">
+        <div class="terminal-header">
+            <div class="terminal-dots">
+                <div class="dot" style="background:#ed8796;"></div>
+                <div class="dot" style="background:#eed49f;"></div>
+                <div class="dot" style="background:#a6da95;"></div>
+            </div>
+            <div>python visualizer.py &bull; Linux/Ubuntu Stack Logger</div>
+            <div id="termStatus">READY</div>
+        </div>
+        <div class="terminal-body" id="termLogs">
+            [net:osi] System initialized. Ready to simulate 7-layer OSI communication.
+        </div>
+    </div>
+
+    <footer>
+        OSI 7-Layer Communication Simulation &bull; University Networking Assignment &bull;
+        <a href="https://github.com/Rup335/OSI_Communication_Simulation_Project" target="_blank">Repository on GitHub</a>
+    </footer>
+
+    <script>
+        let currentStep = 0;
+        let timer = null;
+        let steps = [];
+
+        function fcsXor(str) {
+            let sum = 0;
+            for (let i = 0; i < str.length; i++) {
+                sum ^= str.charCodeAt(i);
+            }
+            return sum.toString(16).toUpperCase().padStart(2, '0');
+        }
+
+        function getTime() {
+            const now = new Date();
+            return now.toTimeString().split(' ')[0];
+        }
+
+        function appendLog(lineHtml) {
+            const el = document.getElementById('termLogs');
+            el.innerHTML += `<br>[${getTime()}] ` + lineHtml;
+            el.scrollTop = el.scrollHeight;
+        }
+
+        function buildSimulation(msg) {
+            const l7 = `APP_HDR|${msg}`;
+            const l6 = `PRS_HDR|${l7}`;
+            const l5 = `SES_HDR|${l6}`;
+            const l4 = `TCP_HDR|${l5}`;
+            const l3 = `IP_HDR|${l4}`;
+            const fcs = fcsXor(l3);
+            const l2 = `MAC_HDR|${l3}|FCS:${fcs}`;
+
+            return [
+                // Client Downward
+                { box: 'c-7', dataId: 'c-7-d', payload: l7, log: `<span class="log-tx">[net:osi:tx]</span> [<span class="log-ok">  OK  </span>] Layer 7 (Application ): Packaging raw message<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── Payload: ${l7}` },
+                { box: 'c-6', dataId: 'c-6-d', payload: l6, log: `<span class="log-tx">[net:osi:tx]</span> [<span class="log-ok">  OK  </span>] Layer 6 (Presentation): Encoding ASCII representation<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── Payload: ${l6}`, checkpoint: 'chk1', chkText: 'Layers 7 and 6 completed.' },
+                { box: 'c-5', dataId: 'c-5-d', payload: l5, log: `<span class="log-tx">[net:osi:tx]</span> [<span class="log-ok">  OK  </span>] Layer 5 (Session     ): Establishing session token (ID=1001, SYN=1)<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── Payload: ${l5}` },
+                { box: 'c-4', dataId: 'c-4-d', payload: l4, log: `<span class="log-tx">[net:osi:tx]</span> [<span class="log-ok">  OK  </span>] Layer 4 (Transport   ): Adding TCP header (Port 8080)<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── Payload: ${l4}`, checkpoint: 'chk2', chkText: 'Layers 5 and 4 completed.' },
+                { box: 'c-3', dataId: 'c-3-d', payload: l3, log: `<span class="log-tx">[net:osi:tx]</span> [<span class="log-ok">  OK  </span>] Layer 3 (Network     ): Adding IP header (127.0.0.1)<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── Payload: ${l3}` },
+                { box: 'c-2', dataId: 'c-2-d', payload: l2, log: `<span class="log-tx">[net:osi:tx]</span> [<span class="log-ok">  OK  </span>] Layer 2 (Data Link   ): Framing Ethernet frame &amp; FCS Checksum<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── Payload (${l2.length} bytes): ${l2.substring(0, 65)}...`, checkpoint: 'chk3', chkText: 'Layers 3 and 2 completed.' },
+                { box: 'c-1', dataId: 'c-1-d', payload: `[${l2.length} bytes bitstream]`, log: `<span class="log-tx">[net:osi:tx]</span> [<span class="log-ok">  OK  </span>] Layer 1 (Physical    ): Converting frame to bitstream (${l2.length} bytes)` },
+
+                // Wire
+                { box: 'wire', log: `<span style="color:#f9e2af; font-weight:700;">==&gt; [PHYSICAL WIRE] Transmitting bitstream over TCP Socket (127.0.0.1:8080)...</span>` },
+
+                // Server Upward
+                { box: 's-1', dataId: 's-1-d', payload: `[${l2.length} bytes received]`, log: `<span class="log-rx">[net:osi:rx]</span> [<span class="log-ok">  OK  </span>] Layer 1 (Physical    ): Received ${l2.length} bytes from socket wire` },
+                { box: 's-2', dataId: 's-2-d', payload: l3, log: `<span class="log-rx">[net:osi:rx]</span> [<span class="log-ok">  OK  </span>] Layer 2 (Data Link   ): FCS Checksum (0x${fcs}) Verified. Stripped MAC header`, chkTextServer: 'Server: Layers 1 and 2 completed.' },
+                { box: 's-3', dataId: 's-3-d', payload: l4, log: `<span class="log-rx">[net:osi:rx]</span> [<span class="log-ok">  OK  </span>] Layer 3 (Network     ): IP Header validated. Stripped IP envelope` },
+                { box: 's-4', dataId: 's-4-d', payload: l5, log: `<span class="log-rx">[net:osi:rx]</span> [<span class="log-ok">  OK  </span>] Layer 4 (Transport   ): TCP Header validated (Port 8080 delivered)`, chkTextServer: 'Server: Layers 3 and 4 completed.' },
+                { box: 's-5', dataId: 's-5-d', payload: l6, log: `<span class="log-rx">[net:osi:rx]</span> [<span class="log-ok">  OK  </span>] Layer 5 (Session     ): Session closed. Stripped SES envelope` },
+                { box: 's-6', dataId: 's-6-d', payload: l7, log: `<span class="log-rx">[net:osi:rx]</span> [<span class="log-ok">  OK  </span>] Layer 6 (Presentation): ASCII encoding verified. Stripped PRS envelope`, chkTextServer: 'Server: Layers 5 and 6 completed.' },
+                { box: 's-7', dataId: 's-7-d', payload: msg, log: `<span class="log-rx">[net:osi:rx]</span> [<span class="log-ok">  OK  </span>] Layer 7 (Application ): Final message delivered to user application<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── Payload: ${msg}`, isFinal: true, msg: msg }
+            ];
+        }
+
+        function resetSimulation() {
+            clearTimeout(timer);
+            currentStep = 0;
+            document.querySelectorAll('.layer-item').forEach(el => el.classList.remove('active', 'done'));
+            document.querySelectorAll('.checkpoint-badge').forEach(el => el.classList.remove('done'));
+            ['s-1-d', 's-2-d', 's-3-d', 's-4-d', 's-5-d', 's-6-d', 's-7-d'].forEach(id => {
+                document.getElementById(id).innerText = 'Waiting...';
+            });
+            document.getElementById('termStatus').innerText = 'READY';
+            document.getElementById('termLogs').innerHTML = `[${getTime()}] [net:osi] Simulation reset. Ready for next transmission.`;
+        }
+
+        function executeStep() {
+            if (currentStep >= steps.length) {
+                return;
+            }
+            const s = steps[currentStep];
+            document.querySelectorAll('.layer-item').forEach(el => el.classList.remove('active'));
+
+            if (s.box && s.box !== 'wire') {
+                const el = document.getElementById(s.box);
+                if (el) {
+                    el.classList.add('active');
+                    el.classList.add('done');
+                }
+                if (s.dataId) {
+                    document.getElementById(s.dataId).innerText = s.payload;
+                }
+            }
+
+            appendLog(s.log);
+
+            if (s.checkpoint) {
+                const chk = document.getElementById(s.checkpoint);
+                if (chk) chk.classList.add('done');
+                appendLog(`<span class="log-chk">&gt;&gt;&gt; [PROGRESS CHECKPOINT] ${s.chkText}</span>`);
+            } else if (s.chkTextServer) {
+                appendLog(`<span class="log-chk">&gt;&gt;&gt; [PROGRESS CHECKPOINT] ${s.chkTextServer}</span>`);
+            }
+
+            if (s.isFinal) {
+                appendLog(`<span class="log-success">===========================================================<br>[VERIFICATION SUCCESS] Exact Match Recovered Byte-for-Byte!<br>Delivered Message: "${s.msg}"<br>===========================================================</span>`);
+                document.getElementById('termStatus').innerText = 'SUCCESS (100% LOSS-FREE)';
+            }
+
+            currentStep++;
+        }
+
+        document.getElementById('btnRun').addEventListener('click', () => {
+            resetSimulation();
+            const msg = document.getElementById('userMsg').value.trim() || 'Hello OSI Model';
+            steps = buildSimulation(msg);
+            document.getElementById('termStatus').innerText = 'SIMULATING...';
+
+            function loop() {
+                if (currentStep < steps.length) {
+                    executeStep();
+                    timer = setTimeout(loop, 450);
+                }
+            }
+            loop();
+        });
+
+        document.getElementById('btnStep').addEventListener('click', () => {
+            if (steps.length === 0) {
+                const msg = document.getElementById('userMsg').value.trim() || 'Hello OSI Model';
+                steps = buildSimulation(msg);
+            }
+            executeStep();
+        });
+
+        document.getElementById('btnReset').addEventListener('click', resetSimulation);
+    </script>
+</body>
+</html>

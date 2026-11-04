@@ -1,16 +1,11 @@
 CC = gcc
-CFLAGS = -Wall
+CFLAGS = -Wall -O2
 
-target: osi
-
-osi: main.o layers.o
-	$(CC) main.o layers.o -o osi
-
-main.o: main.c layers.h
-	$(CC) $(CFLAGS) -c main.c
-
-layers.o: layers.c layers.h
-	$(CC) $(CFLAGS) -c layers.c
+osi.exe: main.c ../src/layers.c
+	$(CC) $(CFLAGS) main.c ../src/layers.c -o osi.exe -lws2_32
 
 clean:
-	rm -f *.o osi
+	if exist *.o del /f /q *.o
+	if exist osi.exe del /f /q osi.exe
+
+.PHONY: clean
